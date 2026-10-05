@@ -1,0 +1,15 @@
+{
+  "original": {
+    "records": 300,
+    "quantity": 3444,
+    "returns": 33,
+    "netRevenue": 3217100
+  },
+  "updated": {
+    "records": 300,
+    "quantity": 4524,
+    "returns": 63,
+    "netRevenue": 3970100
+  },
+  "changed": 240
+}
