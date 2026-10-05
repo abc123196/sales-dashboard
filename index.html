@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 年 9 月銷售儀表板</title>
+<meta name="description" content="教學用模擬銷售資料：每日淨銷售額、商品、分類與通路比較。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EDF1F4;
+  --sheet: #FFFFFF;
+  --ink: #14202B;
+  --muted: #566879;
+  --line: #D5DDE4;
+  --accent: #0B5C8E;
+  --accent-soft: rgba(11, 92, 142, .12);
+  --good: #1B7F5C;
+  --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", system-ui, sans-serif;
+  --serif: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E161E;
+    --sheet: #16212C;
+    --ink: #E6EDF3;
+    --muted: #94A5B5;
+    --line: #2A3947;
+    --accent: #5DB4E8;
+    --accent-soft: rgba(93, 180, 232, .16);
+    --good: #4CC596;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.65 var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+.wrap { max-width: 1160px; margin: 0 auto; padding: clamp(16px, 3.2vw, 40px); }
+h1, h2 { font-family: var(--serif); margin: 0; line-height: 1.3; }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.1rem); }
+h2 { font-size: 1.12rem; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+/* 頁首 */
+.top { display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; }
+.top .sub { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+.status { font-size: .85rem; color: var(--muted); text-align: right; line-height: 1.7; }
+.status strong { color: var(--ink); font-weight: 700; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
+.dot.live { background: var(--good); }
+.dot.err { background: #C2543F; }
+
+/* 關鍵數字：主指標 + 四個輔助指標 */
+.kpis { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px 48px; margin-bottom: 28px; align-items: stretch; }
+.kpi-main { border-left: 4px solid var(--accent); padding: 4px 0 4px 20px; display: flex; flex-direction: column; justify-content: center; }
+.k-label { color: var(--muted); font-size: .92rem; }
+.k-big { font: 700 clamp(2.3rem, 6.2vw, 3.8rem)/1.1 var(--serif); letter-spacing: -.01em; margin: 4px 0 6px; overflow-wrap: anywhere; }
+.delta { font-size: .88rem; color: var(--muted); }
+.delta.up { color: var(--good); font-weight: 500; }
+.kpi-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; margin: 0; }
+.kpi-list > div { border-top: 1px solid var(--line); padding: 12px 0 14px; min-width: 0; }
+.kpi-list dt { color: var(--muted); font-size: .88rem; }
+.kpi-list dd { margin: 0; }
+.kpi-list .k-num { font: 700 1.55rem/1.3 var(--serif); display: block; }
+
+/* 圖表區 */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 20px; min-width: 0; }
+.s12 { grid-column: span 12; } .s7 { grid-column: span 7; } .s6 { grid-column: span 6; } .s5 { grid-column: span 5; }
+.panel header { margin-bottom: 14px; }
+.insight { color: var(--muted); font-size: .9rem; margin-top: 4px; max-width: 70ch; }
+.box { position: relative; height: 320px; }
+.box.tall { height: 380px; }
+.box.hero { height: 340px; }
+.box.pie { height: 230px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 12px; padding: 0; list-style: none; font-size: .85rem; color: var(--muted); }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.share { list-style: none; margin: 14px 0 0; padding: 0; font-size: .92rem; }
+.share li { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+.share .pct { min-width: 3.6em; text-align: right; font-weight: 700; }
+
+/* 頁尾 */
+.foot { margin-top: 28px; font-size: .88rem; color: var(--muted); }
+details { border-top: 1px solid var(--line); padding: 12px 0; }
+summary { cursor: pointer; color: var(--ink); font-weight: 500; }
+.table-wrap { overflow-x: auto; margin-top: 10px; }
+table { border-collapse: collapse; width: 100%; min-width: 420px; }
+th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+td.num, th.num { text-align: right; }
+.ok { color: var(--good); font-weight: 700; }
+.bad { color: #C2543F; font-weight: 700; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 6px; font-size: .9rem; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 5; }
+.toast.show { opacity: 1; }
+
+@media (max-width: 960px) {
+  .kpis { grid-template-columns: 1fr; }
+  .s7, .s6, .s5 { grid-column: span 12; }
+  .status { text-align: left; }
+}
+@media (max-width: 560px) {
+  .panel { padding: 14px; }
+  .box, .box.hero { height: 280px; }
+  .box.tall { height: 360px; }
+  .kpi-main { padding-left: 14px; }
+  .kpi-list .k-num { font-size: 1.3rem; }
+  .share li { grid-template-columns: 12px 1fr auto; }
+  .share li .amt { grid-column: 2 / 4; color: var(--muted); font-size: .85rem; order: 3; }
+}
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>2026 年 9 月銷售儀表板</h1>
+      <p class="sub">教學用模擬資料。金額為新臺幣，未另計稅、折扣或運費。</p>
+    </div>
+    <div class="status" aria-live="polite">
+      <p><strong id="stSnapshot">載入中</strong></p>
+      <p id="stLoaded"></p>
+      <p id="stBuilt"></p>
+      <p><span class="dot" id="stDot"></span><span id="stPoll"></span></p>
+    </div>
+  </header>
+
+  <section class="kpis" aria-label="關鍵數字">
+    <div class="kpi-main">
+      <span class="k-label">淨銷售額</span>
+      <strong class="k-big" id="kNet">-</strong>
+      <span class="delta" id="kNetD"></span>
+    </div>
+    <dl class="kpi-list">
+      <div><dt>銷售紀錄</dt><dd><span class="k-num" id="kRec">-</span><span class="delta" id="kRecD"></span></dd></div>
+      <div><dt>售出數量（含退貨）</dt><dd><span class="k-num" id="kQty">-</span><span class="delta" id="kQtyD"></span></dd></div>
+      <div><dt>退貨數量</dt><dd><span class="k-num" id="kRet">-</span><span class="delta" id="kRetD"></span></dd></div>
+      <div><dt>退貨率</dt><dd><span class="k-num" id="kRate">-</span><span class="delta" id="kRateD"></span></dd></div>
+    </dl>
+  </section>
+
+  <main class="grid">
+    <section class="panel s12">
+      <header>
+        <h2>每日淨銷售額</h2>
+        <p class="insight" id="insDaily"></p>
+      </header>
+      <div class="box hero"><canvas id="cDaily" role="img" aria-label="每日淨銷售額折線圖"></canvas></div>
+    </section>
+
+    <section class="panel s7">
+      <header>
+        <h2>各商品淨銷售額</h2>
+        <p class="insight" id="insProduct"></p>
+      </header>
+      <ul class="legend" id="catLegend" aria-label="分類顏色"></ul>
+      <div class="box tall"><canvas id="cProduct" role="img" aria-label="各商品淨銷售額長條圖"></canvas></div>
+    </section>
+
+    <section class="panel s5">
+      <header>
+        <h2>各分類淨銷售額占比</h2>
+        <p class="insight" id="insCategory"></p>
+      </header>
+      <div class="box pie"><canvas id="cCategory" role="img" aria-label="各分類淨銷售額占比圓餅圖"></canvas></div>
+      <ul class="share" id="catShare"></ul>
+    </section>
+
+    <section class="panel s6">
+      <header>
+        <h2>通路比較</h2>
+        <p class="insight" id="insChannel"></p>
+      </header>
+      <div class="box"><canvas id="cChannel" role="img" aria-label="各通路淨銷售額堆疊長條圖"></canvas></div>
+    </section>
+
+    <section class="panel s6">
+      <header>
+        <h2>售出數量與淨銷售額</h2>
+        <p class="insight" id="insScatter"></p>
+      </header>
+      <div class="box"><canvas id="cScatter" role="img" aria-label="淨售出數量與淨銷售額散佈圖"></canvas></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <details id="verify" hidden>
+      <summary id="verifySummary">驗收數值</summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>項目</th><th class="num">預期</th><th class="num">資料庫</th><th>結果</th></tr></thead>
+          <tbody id="verifyBody"></tbody>
+        </table>
+      </div>
+    </details>
+    <p>淨銷售額 = 單價 × (售出數量 − 退貨數量)。資料由 Python 從 MySQL 匯出為靜態檔案，重新執行 <code>pipeline.py build</code> 並推送後，這個頁面會自動載入新資料。</p>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="vendor/chart.umd.js"></script>
+<script>
+(function () {
+'use strict';
+
+var DATA = {"meta":{"generated_at":"2026-10-05T13:16:51+08:00","snapshot":{"label":"updated","source_file":"sales_updated_300.csv","loaded_at":"2026-10-05T13:16:51","records":300,"quantity":4524,"returns":63,"net_revenue":3970100,"inserted":0,"changed":240,"unchanged":60,"deleted":0},"previous":{"label":"original","source_file":"sales_original_300.csv","loaded_at":"2026-10-05T13:16:51","records":300,"quantity":3444,"returns":33,"net_revenue":3217100,"inserted":300,"changed":0,"unchanged":0,"deleted":0,"daily":[{"sale_date":"2026-09-01","net_revenue":97600},{"sale_date":"2026-09-02","net_revenue":105650},{"sale_date":"2026-09-03","net_revenue":97400},{"sale_date":"2026-09-04","net_revenue":84150},{"sale_date":"2026-09-05","net_revenue":113000},{"sale_date":"2026-09-06","net_revenue":108650},{"sale_date":"2026-09-07","net_revenue":107550},{"sale_date":"2026-09-08","net_revenue":120050},{"sale_date":"2026-09-09","net_revenue":101500},{"sale_date":"2026-09-10","net_revenue":124150},{"sale_date":"2026-09-11","net_revenue":116900},{"sale_date":"2026-09-12","net_revenue":103250},{"sale_date":"2026-09-13","net_revenue":123300},{"sale_date":"2026-09-14","net_revenue":106250},{"sale_date":"2026-09-15","net_revenue":113600},{"sale_date":"2026-09-16","net_revenue":107100},{"sale_date":"2026-09-17","net_revenue":93500},{"sale_date":"2026-09-18","net_revenue":113650},{"sale_date":"2026-09-19","net_revenue":97600},{"sale_date":"2026-09-20","net_revenue":105650},{"sale_date":"2026-09-21","net_revenue":97400},{"sale_date":"2026-09-22","net_revenue":84150},{"sale_date":"2026-09-23","net_revenue":113000},{"sale_date":"2026-09-24","net_revenue":108650},{"sale_date":"2026-09-25","net_revenue":107550},{"sale_date":"2026-09-26","net_revenue":120050},{"sale_date":"2026-09-27","net_revenue":101500},{"sale_date":"2026-09-28","net_revenue":124150},{"sale_date":"2026-09-29","net_revenue":116900},{"sale_date":"2026-09-30","net_revenue":103250}]}},"daily":[{"sale_date":"2026-09-01","records":10,"quantity":145,"returns_total":2,"net_revenue":122700},{"sale_date":"2026-09-02","records":10,"quantity":143,"returns_total":2,"net_revenue":130750},{"sale_date":"2026-09-03","records":10,"quantity":141,"returns_total":2,"net_revenue":122500},{"sale_date":"2026-09-04","records":10,"quantity":139,"returns_total":2,"net_revenue":109250},{"sale_date":"2026-09-05","records":10,"quantity":155,"returns_total":2,"net_revenue":138100},{"sale_date":"2026-09-06","records":10,"quantity":153,"returns_total":2,"net_revenue":133750},{"sale_date":"2026-09-07","records":10,"quantity":151,"returns_total":2,"net_revenue":132650},{"sale_date":"2026-09-08","records":10,"quantity":149,"returns_total":2,"net_revenue":145150},{"sale_date":"2026-09-09","records":10,"quantity":147,"returns_total":3,"net_revenue":126600},{"sale_date":"2026-09-10","records":10,"quantity":163,"returns_total":2,"net_revenue":149250},{"sale_date":"2026-09-11","records":10,"quantity":161,"returns_total":2,"net_revenue":142000},{"sale_date":"2026-09-12","records":10,"quantity":159,"returns_total":2,"net_revenue":128350},{"sale_date":"2026-09-13","records":10,"quantity":157,"returns_total":2,"net_revenue":148400},{"sale_date":"2026-09-14","records":10,"quantity":155,"returns_total":2,"net_revenue":131350},{"sale_date":"2026-09-15","records":10,"quantity":153,"returns_total":2,"net_revenue":138700},{"sale_date":"2026-09-16","records":10,"quantity":151,"returns_total":2,"net_revenue":132200},{"sale_date":"2026-09-17","records":10,"quantity":149,"returns_total":2,"net_revenue":118600},{"sale_date":"2026-09-18","records":10,"quantity":147,"returns_total":3,"net_revenue":138750},{"sale_date":"2026-09-19","records":10,"quantity":145,"returns_total":2,"net_revenue":122700},{"sale_date":"2026-09-20","records":10,"quantity":143,"returns_total":2,"net_revenue":130750},{"sale_date":"2026-09-21","records":10,"quantity":141,"returns_total":2,"net_revenue":122500},{"sale_date":"2026-09-22","records":10,"quantity":139,"returns_total":2,"net_revenue":109250},{"sale_date":"2026-09-23","records":10,"quantity":155,"returns_total":2,"net_revenue":138100},{"sale_date":"2026-09-24","records":10,"quantity":153,"returns_total":2,"net_revenue":133750},{"sale_date":"2026-09-25","records":10,"quantity":151,"returns_total":2,"net_revenue":132650},{"sale_date":"2026-09-26","records":10,"quantity":149,"returns_total":2,"net_revenue":145150},{"sale_date":"2026-09-27","records":10,"quantity":147,"returns_total":3,"net_revenue":126600},{"sale_date":"2026-09-28","records":10,"quantity":163,"returns_total":2,"net_revenue":149250},{"sale_date":"2026-09-29","records":10,"quantity":161,"returns_total":2,"net_revenue":142000},{"sale_date":"2026-09-30","records":10,"quantity":159,"returns_total":2,"net_revenue":128350}],"products":[{"product_id":2,"product_name":"機械鍵盤","category":"電腦周邊","records":30,"quantity":585,"returns_total":3,"net_quantity":582,"net_revenue":698400},{"product_id":4,"product_name":"藍牙耳機","category":"影音設備","records":30,"quantity":339,"returns_total":33,"net_quantity":306,"net_revenue":550800},{"product_id":5,"product_name":"藍牙喇叭","category":"影音設備","records":30,"quantity":345,"returns_total":3,"net_quantity":342,"net_revenue":513000},{"product_id":6,"product_name":"網路攝影機","category":"影音設備","records":30,"quantity":351,"returns_total":3,"net_quantity":348,"net_revenue":382800},{"product_id":7,"product_name":"行動電源","category":"行動配件","records":30,"quantity":429,"returns_total":4,"net_quantity":425,"net_revenue":382500},{"product_id":3,"product_name":"USB集線器","category":"電腦周邊","records":30,"quantity":591,"returns_total":3,"net_quantity":588,"net_revenue":382200},{"product_id":10,"product_name":"筆電支架","category":"電腦周邊","records":30,"quantity":429,"returns_total":3,"net_quantity":426,"net_revenue":340800},{"product_id":1,"product_name":"無線滑鼠","category":"電腦周邊","records":30,"quantity":597,"returns_total":3,"net_quantity":594,"net_revenue":297000},{"product_id":9,"product_name":"充電器","category":"行動配件","records":30,"quantity":423,"returns_total":4,"net_quantity":419,"net_revenue":293300},{"product_id":8,"product_name":"手機支架","category":"行動配件","records":30,"quantity":435,"returns_total":4,"net_quantity":431,"net_revenue":129300}],"categories":[{"category":"電腦周邊","records":120,"net_quantity":2190,"net_revenue":1718400},{"category":"影音設備","records":90,"net_quantity":996,"net_revenue":1446600},{"category":"行動配件","records":90,"net_quantity":1275,"net_revenue":805100}],"channels":[{"channel":"校園團購","records":100,"net_quantity":1510,"net_revenue":1345350},{"channel":"實體門市","records":100,"net_quantity":1494,"net_revenue":1331850},{"channel":"網路商店","records":100,"net_quantity":1457,"net_revenue":1292900}],"channel_category":[{"channel":"實體門市","category":"影音設備","net_quantity":335,"net_revenue":494400},{"channel":"實體門市","category":"行動配件","net_quantity":435,"net_revenue":264300},{"channel":"實體門市","category":"電腦周邊","net_quantity":724,"net_revenue":573150},{"channel":"校園團購","category":"影音設備","net_quantity":335,"net_revenue":492800},{"channel":"校園團購","category":"行動配件","net_quantity":435,"net_revenue":283900},{"channel":"校園團購","category":"電腦周邊","net_quantity":740,"net_revenue":568650},{"channel":"網路商店","category":"影音設備","net_quantity":326,"net_revenue":459400},{"channel":"網路商店","category":"行動配件","net_quantity":405,"net_revenue":256900},{"channel":"網路商店","category":"電腦周邊","net_quantity":726,"net_revenue":576600}],"records":[{"sale_id":1,"sale_date":"2026-09-01","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":18,"net_revenue":9000},{"sale_id":2,"sale_date":"2026-09-01","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":11,"net_revenue":13200},{"sale_id":3,"sale_date":"2026-09-01","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":22,"net_revenue":14300},{"sale_id":4,"sale_date":"2026-09-01","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":6,"net_revenue":10800},{"sale_id":5,"sale_date":"2026-09-01","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":18,"net_revenue":27000},{"sale_id":6,"sale_date":"2026-09-01","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":11,"net_revenue":12100},{"sale_id":7,"sale_date":"2026-09-01","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":7,"net_revenue":6300},{"sale_id":8,"sale_date":"2026-09-01","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":18,"net_revenue":5400},{"sale_id":9,"sale_date":"2026-09-01","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":10,"net_revenue":7000},{"sale_id":10,"sale_date":"2026-09-01","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":22,"net_revenue":17600},{"sale_id":11,"sale_date":"2026-09-02","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":25,"net_revenue":12500},{"sale_id":12,"sale_date":"2026-09-02","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":18,"net_revenue":21600},{"sale_id":13,"sale_date":"2026-09-02","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":11,"net_revenue":7150},{"sale_id":14,"sale_date":"2026-09-02","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":13,"net_revenue":23400},{"sale_id":15,"sale_date":"2026-09-02","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":7,"net_revenue":10500},{"sale_id":16,"sale_date":"2026-09-02","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":18,"net_revenue":19800},{"sale_id":17,"sale_date":"2026-09-02","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":14,"net_revenue":12600},{"sale_id":18,"sale_date":"2026-09-02","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":6,"net_revenue":1800},{"sale_id":19,"sale_date":"2026-09-02","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":18,"net_revenue":12600},{"sale_id":20,"sale_date":"2026-09-02","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":11,"net_revenue":8800},{"sale_id":21,"sale_date":"2026-09-03","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":14,"net_revenue":7000},{"sale_id":22,"sale_date":"2026-09-03","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":25,"net_revenue":30000},{"sale_id":23,"sale_date":"2026-09-03","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":18,"net_revenue":11700},{"sale_id":24,"sale_date":"2026-09-03","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":2,"net_revenue":3600},{"sale_id":25,"sale_date":"2026-09-03","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":14,"net_revenue":21000},{"sale_id":26,"sale_date":"2026-09-03","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":7,"net_revenue":7700},{"sale_id":27,"sale_date":"2026-09-03","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":20,"net_revenue":18000},{"sale_id":28,"sale_date":"2026-09-03","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":14,"net_revenue":4200},{"sale_id":29,"sale_date":"2026-09-03","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":7,"net_revenue":4900},{"sale_id":30,"sale_date":"2026-09-03","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":18,"net_revenue":14400},{"sale_id":31,"sale_date":"2026-09-04","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":21,"net_revenue":10500},{"sale_id":32,"sale_date":"2026-09-04","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":14,"net_revenue":16800},{"sale_id":33,"sale_date":"2026-09-04","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":25,"net_revenue":16250},{"sale_id":34,"sale_date":"2026-09-04","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":9,"net_revenue":16200},{"sale_id":35,"sale_date":"2026-09-04","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":3,"net_revenue":4500},{"sale_id":36,"sale_date":"2026-09-04","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":13,"net_revenue":14300},{"sale_id":37,"sale_date":"2026-09-04","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":10,"net_revenue":9000},{"sale_id":38,"sale_date":"2026-09-04","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":21,"net_revenue":6300},{"sale_id":39,"sale_date":"2026-09-04","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":14,"net_revenue":9800},{"sale_id":40,"sale_date":"2026-09-04","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":7,"net_revenue":5600},{"sale_id":41,"sale_date":"2026-09-05","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":28,"net_revenue":14000},{"sale_id":42,"sale_date":"2026-09-05","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":21,"net_revenue":25200},{"sale_id":43,"sale_date":"2026-09-05","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":14,"net_revenue":9100},{"sale_id":44,"sale_date":"2026-09-05","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":16,"net_revenue":28800},{"sale_id":45,"sale_date":"2026-09-05","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":9,"net_revenue":13500},{"sale_id":46,"sale_date":"2026-09-05","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":3,"net_revenue":3300},{"sale_id":47,"sale_date":"2026-09-05","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":17,"net_revenue":15300},{"sale_id":48,"sale_date":"2026-09-05","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":10,"net_revenue":3000},{"sale_id":49,"sale_date":"2026-09-05","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":21,"net_revenue":14700},{"sale_id":50,"sale_date":"2026-09-05","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":14,"net_revenue":11200},{"sale_id":51,"sale_date":"2026-09-06","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":17,"net_revenue":8500},{"sale_id":52,"sale_date":"2026-09-06","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":28,"net_revenue":33600},{"sale_id":53,"sale_date":"2026-09-06","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":21,"net_revenue":13650},{"sale_id":54,"sale_date":"2026-09-06","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":4,"net_revenue":7200},{"sale_id":55,"sale_date":"2026-09-06","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":17,"net_revenue":25500},{"sale_id":56,"sale_date":"2026-09-06","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":10,"net_revenue":11000},{"sale_id":57,"sale_date":"2026-09-06","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":6,"net_revenue":5400},{"sale_id":58,"sale_date":"2026-09-06","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":17,"net_revenue":5100},{"sale_id":59,"sale_date":"2026-09-06","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":10,"net_revenue":7000},{"sale_id":60,"sale_date":"2026-09-06","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":21,"net_revenue":16800},{"sale_id":61,"sale_date":"2026-09-07","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":24,"net_revenue":12000},{"sale_id":62,"sale_date":"2026-09-07","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":17,"net_revenue":20400},{"sale_id":63,"sale_date":"2026-09-07","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":27,"net_revenue":17550},{"sale_id":64,"sale_date":"2026-09-07","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":12,"net_revenue":21600},{"sale_id":65,"sale_date":"2026-09-07","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":6,"net_revenue":9000},{"sale_id":66,"sale_date":"2026-09-07","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":17,"net_revenue":18700},{"sale_id":67,"sale_date":"2026-09-07","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":13,"net_revenue":11700},{"sale_id":68,"sale_date":"2026-09-07","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":6,"net_revenue":1800},{"sale_id":69,"sale_date":"2026-09-07","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":17,"net_revenue":11900},{"sale_id":70,"sale_date":"2026-09-07","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":10,"net_revenue":8000},{"sale_id":71,"sale_date":"2026-09-08","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":13,"net_revenue":6500},{"sale_id":72,"sale_date":"2026-09-08","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":23,"net_revenue":27600},{"sale_id":73,"sale_date":"2026-09-08","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":17,"net_revenue":11050},{"sale_id":74,"sale_date":"2026-09-08","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":19,"net_revenue":34200},{"sale_id":75,"sale_date":"2026-09-08","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":13,"net_revenue":19500},{"sale_id":76,"sale_date":"2026-09-08","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":6,"net_revenue":6600},{"sale_id":77,"sale_date":"2026-09-08","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":20,"net_revenue":18000},{"sale_id":78,"sale_date":"2026-09-08","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":13,"net_revenue":3900},{"sale_id":79,"sale_date":"2026-09-08","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":6,"net_revenue":4200},{"sale_id":80,"sale_date":"2026-09-08","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":17,"net_revenue":13600},{"sale_id":81,"sale_date":"2026-09-09","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":19,"net_revenue":9500},{"sale_id":82,"sale_date":"2026-09-09","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":13,"net_revenue":15600},{"sale_id":83,"sale_date":"2026-09-09","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":24,"net_revenue":15600},{"sale_id":84,"sale_date":"2026-09-09","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":8,"net_revenue":14400},{"sale_id":85,"sale_date":"2026-09-09","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":20,"net_revenue":30000},{"sale_id":86,"sale_date":"2026-09-09","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":13,"net_revenue":14300},{"sale_id":87,"sale_date":"2026-09-09","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":9,"net_revenue":8100},{"sale_id":88,"sale_date":"2026-09-09","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":20,"net_revenue":6000},{"sale_id":89,"sale_date":"2026-09-09","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":13,"net_revenue":9100},{"sale_id":90,"sale_date":"2026-09-09","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":5,"net_revenue":4000},{"sale_id":91,"sale_date":"2026-09-10","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":27,"net_revenue":13500},{"sale_id":92,"sale_date":"2026-09-10","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":20,"net_revenue":24000},{"sale_id":93,"sale_date":"2026-09-10","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":13,"net_revenue":8450},{"sale_id":94,"sale_date":"2026-09-10","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":15,"net_revenue":27000},{"sale_id":95,"sale_date":"2026-09-10","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":9,"net_revenue":13500},{"sale_id":96,"sale_date":"2026-09-10","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":20,"net_revenue":22000},{"sale_id":97,"sale_date":"2026-09-10","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":16,"net_revenue":14400},{"sale_id":98,"sale_date":"2026-09-10","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":9,"net_revenue":2700},{"sale_id":99,"sale_date":"2026-09-10","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":19,"net_revenue":13300},{"sale_id":100,"sale_date":"2026-09-10","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":13,"net_revenue":10400},{"sale_id":101,"sale_date":"2026-09-11","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":16,"net_revenue":8000},{"sale_id":102,"sale_date":"2026-09-11","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":27,"net_revenue":32400},{"sale_id":103,"sale_date":"2026-09-11","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":20,"net_revenue":13000},{"sale_id":104,"sale_date":"2026-09-11","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":4,"net_revenue":7200},{"sale_id":105,"sale_date":"2026-09-11","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":16,"net_revenue":24000},{"sale_id":106,"sale_date":"2026-09-11","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":9,"net_revenue":9900},{"sale_id":107,"sale_date":"2026-09-11","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":23,"net_revenue":20700},{"sale_id":108,"sale_date":"2026-09-11","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":15,"net_revenue":4500},{"sale_id":109,"sale_date":"2026-09-11","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":9,"net_revenue":6300},{"sale_id":110,"sale_date":"2026-09-11","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":20,"net_revenue":16000},{"sale_id":111,"sale_date":"2026-09-12","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":23,"net_revenue":11500},{"sale_id":112,"sale_date":"2026-09-12","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":16,"net_revenue":19200},{"sale_id":113,"sale_date":"2026-09-12","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":27,"net_revenue":17550},{"sale_id":114,"sale_date":"2026-09-12","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":11,"net_revenue":19800},{"sale_id":115,"sale_date":"2026-09-12","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":5,"net_revenue":7500},{"sale_id":116,"sale_date":"2026-09-12","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":16,"net_revenue":17600},{"sale_id":117,"sale_date":"2026-09-12","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":11,"net_revenue":9900},{"sale_id":118,"sale_date":"2026-09-12","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":23,"net_revenue":6900},{"sale_id":119,"sale_date":"2026-09-12","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":16,"net_revenue":11200},{"sale_id":120,"sale_date":"2026-09-12","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":9,"net_revenue":7200},{"sale_id":121,"sale_date":"2026-09-13","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":12,"net_revenue":6000},{"sale_id":122,"sale_date":"2026-09-13","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":23,"net_revenue":27600},{"sale_id":123,"sale_date":"2026-09-13","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":16,"net_revenue":10400},{"sale_id":124,"sale_date":"2026-09-13","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":18,"net_revenue":32400},{"sale_id":125,"sale_date":"2026-09-13","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":12,"net_revenue":18000},{"sale_id":126,"sale_date":"2026-09-13","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":4,"net_revenue":4400},{"sale_id":127,"sale_date":"2026-09-13","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":19,"net_revenue":17100},{"sale_id":128,"sale_date":"2026-09-13","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":12,"net_revenue":3600},{"sale_id":129,"sale_date":"2026-09-13","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":23,"net_revenue":16100},{"sale_id":130,"sale_date":"2026-09-13","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":16,"net_revenue":12800},{"sale_id":131,"sale_date":"2026-09-14","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":19,"net_revenue":9500},{"sale_id":132,"sale_date":"2026-09-14","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":12,"net_revenue":14400},{"sale_id":133,"sale_date":"2026-09-14","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":23,"net_revenue":14950},{"sale_id":134,"sale_date":"2026-09-14","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":7,"net_revenue":12600},{"sale_id":135,"sale_date":"2026-09-14","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":18,"net_revenue":27000},{"sale_id":136,"sale_date":"2026-09-14","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":12,"net_revenue":13200},{"sale_id":137,"sale_date":"2026-09-14","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":8,"net_revenue":7200},{"sale_id":138,"sale_date":"2026-09-14","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":19,"net_revenue":5700},{"sale_id":139,"sale_date":"2026-09-14","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":12,"net_revenue":8400},{"sale_id":140,"sale_date":"2026-09-14","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":23,"net_revenue":18400},{"sale_id":141,"sale_date":"2026-09-15","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":26,"net_revenue":13000},{"sale_id":142,"sale_date":"2026-09-15","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":19,"net_revenue":22800},{"sale_id":143,"sale_date":"2026-09-15","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":12,"net_revenue":7800},{"sale_id":144,"sale_date":"2026-09-15","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":13,"net_revenue":23400},{"sale_id":145,"sale_date":"2026-09-15","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":8,"net_revenue":12000},{"sale_id":146,"sale_date":"2026-09-15","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":19,"net_revenue":20900},{"sale_id":147,"sale_date":"2026-09-15","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":15,"net_revenue":13500},{"sale_id":148,"sale_date":"2026-09-15","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":8,"net_revenue":2400},{"sale_id":149,"sale_date":"2026-09-15","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":19,"net_revenue":13300},{"sale_id":150,"sale_date":"2026-09-15","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":12,"net_revenue":9600},{"sale_id":151,"sale_date":"2026-09-16","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":15,"net_revenue":7500},{"sale_id":152,"sale_date":"2026-09-16","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":26,"net_revenue":31200},{"sale_id":153,"sale_date":"2026-09-16","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":18,"net_revenue":11700},{"sale_id":154,"sale_date":"2026-09-16","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":3,"net_revenue":5400},{"sale_id":155,"sale_date":"2026-09-16","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":15,"net_revenue":22500},{"sale_id":156,"sale_date":"2026-09-16","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":8,"net_revenue":8800},{"sale_id":157,"sale_date":"2026-09-16","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":22,"net_revenue":19800},{"sale_id":158,"sale_date":"2026-09-16","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":15,"net_revenue":4500},{"sale_id":159,"sale_date":"2026-09-16","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":8,"net_revenue":5600},{"sale_id":160,"sale_date":"2026-09-16","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":19,"net_revenue":15200},{"sale_id":161,"sale_date":"2026-09-17","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":22,"net_revenue":11000},{"sale_id":162,"sale_date":"2026-09-17","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":14,"net_revenue":16800},{"sale_id":163,"sale_date":"2026-09-17","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":26,"net_revenue":16900},{"sale_id":164,"sale_date":"2026-09-17","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":10,"net_revenue":18000},{"sale_id":165,"sale_date":"2026-09-17","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":4,"net_revenue":6000},{"sale_id":166,"sale_date":"2026-09-17","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":15,"net_revenue":16500},{"sale_id":167,"sale_date":"2026-09-17","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":11,"net_revenue":9900},{"sale_id":168,"sale_date":"2026-09-17","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":22,"net_revenue":6600},{"sale_id":169,"sale_date":"2026-09-17","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":15,"net_revenue":10500},{"sale_id":170,"sale_date":"2026-09-17","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":8,"net_revenue":6400},{"sale_id":171,"sale_date":"2026-09-18","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":10,"net_revenue":5000},{"sale_id":172,"sale_date":"2026-09-18","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":22,"net_revenue":26400},{"sale_id":173,"sale_date":"2026-09-18","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":15,"net_revenue":9750},{"sale_id":174,"sale_date":"2026-09-18","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":17,"net_revenue":30600},{"sale_id":175,"sale_date":"2026-09-18","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":11,"net_revenue":16500},{"sale_id":176,"sale_date":"2026-09-18","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":4,"net_revenue":4400},{"sale_id":177,"sale_date":"2026-09-18","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":18,"net_revenue":16200},{"sale_id":178,"sale_date":"2026-09-18","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":11,"net_revenue":3300},{"sale_id":179,"sale_date":"2026-09-18","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":22,"net_revenue":15400},{"sale_id":180,"sale_date":"2026-09-18","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":14,"net_revenue":11200},{"sale_id":181,"sale_date":"2026-09-19","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":18,"net_revenue":9000},{"sale_id":182,"sale_date":"2026-09-19","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":11,"net_revenue":13200},{"sale_id":183,"sale_date":"2026-09-19","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":22,"net_revenue":14300},{"sale_id":184,"sale_date":"2026-09-19","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":6,"net_revenue":10800},{"sale_id":185,"sale_date":"2026-09-19","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":18,"net_revenue":27000},{"sale_id":186,"sale_date":"2026-09-19","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":11,"net_revenue":12100},{"sale_id":187,"sale_date":"2026-09-19","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":7,"net_revenue":6300},{"sale_id":188,"sale_date":"2026-09-19","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":18,"net_revenue":5400},{"sale_id":189,"sale_date":"2026-09-19","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":10,"net_revenue":7000},{"sale_id":190,"sale_date":"2026-09-19","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":22,"net_revenue":17600},{"sale_id":191,"sale_date":"2026-09-20","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":25,"net_revenue":12500},{"sale_id":192,"sale_date":"2026-09-20","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":18,"net_revenue":21600},{"sale_id":193,"sale_date":"2026-09-20","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":11,"net_revenue":7150},{"sale_id":194,"sale_date":"2026-09-20","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":13,"net_revenue":23400},{"sale_id":195,"sale_date":"2026-09-20","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":7,"net_revenue":10500},{"sale_id":196,"sale_date":"2026-09-20","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":18,"net_revenue":19800},{"sale_id":197,"sale_date":"2026-09-20","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":14,"net_revenue":12600},{"sale_id":198,"sale_date":"2026-09-20","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":6,"net_revenue":1800},{"sale_id":199,"sale_date":"2026-09-20","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":18,"net_revenue":12600},{"sale_id":200,"sale_date":"2026-09-20","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":11,"net_revenue":8800},{"sale_id":201,"sale_date":"2026-09-21","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":14,"net_revenue":7000},{"sale_id":202,"sale_date":"2026-09-21","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":25,"net_revenue":30000},{"sale_id":203,"sale_date":"2026-09-21","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":18,"net_revenue":11700},{"sale_id":204,"sale_date":"2026-09-21","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":2,"net_revenue":3600},{"sale_id":205,"sale_date":"2026-09-21","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":14,"net_revenue":21000},{"sale_id":206,"sale_date":"2026-09-21","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":7,"net_revenue":7700},{"sale_id":207,"sale_date":"2026-09-21","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":20,"net_revenue":18000},{"sale_id":208,"sale_date":"2026-09-21","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":14,"net_revenue":4200},{"sale_id":209,"sale_date":"2026-09-21","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":7,"net_revenue":4900},{"sale_id":210,"sale_date":"2026-09-21","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":18,"net_revenue":14400},{"sale_id":211,"sale_date":"2026-09-22","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":21,"net_revenue":10500},{"sale_id":212,"sale_date":"2026-09-22","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":14,"net_revenue":16800},{"sale_id":213,"sale_date":"2026-09-22","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":25,"net_revenue":16250},{"sale_id":214,"sale_date":"2026-09-22","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":9,"net_revenue":16200},{"sale_id":215,"sale_date":"2026-09-22","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":3,"net_revenue":4500},{"sale_id":216,"sale_date":"2026-09-22","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":13,"net_revenue":14300},{"sale_id":217,"sale_date":"2026-09-22","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":10,"net_revenue":9000},{"sale_id":218,"sale_date":"2026-09-22","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":21,"net_revenue":6300},{"sale_id":219,"sale_date":"2026-09-22","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":14,"net_revenue":9800},{"sale_id":220,"sale_date":"2026-09-22","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":7,"net_revenue":5600},{"sale_id":221,"sale_date":"2026-09-23","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":28,"net_revenue":14000},{"sale_id":222,"sale_date":"2026-09-23","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":21,"net_revenue":25200},{"sale_id":223,"sale_date":"2026-09-23","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":14,"net_revenue":9100},{"sale_id":224,"sale_date":"2026-09-23","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":16,"net_revenue":28800},{"sale_id":225,"sale_date":"2026-09-23","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":9,"net_revenue":13500},{"sale_id":226,"sale_date":"2026-09-23","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":3,"net_revenue":3300},{"sale_id":227,"sale_date":"2026-09-23","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":17,"net_revenue":15300},{"sale_id":228,"sale_date":"2026-09-23","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":10,"net_revenue":3000},{"sale_id":229,"sale_date":"2026-09-23","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":21,"net_revenue":14700},{"sale_id":230,"sale_date":"2026-09-23","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":14,"net_revenue":11200},{"sale_id":231,"sale_date":"2026-09-24","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":17,"net_revenue":8500},{"sale_id":232,"sale_date":"2026-09-24","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":28,"net_revenue":33600},{"sale_id":233,"sale_date":"2026-09-24","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":21,"net_revenue":13650},{"sale_id":234,"sale_date":"2026-09-24","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":4,"net_revenue":7200},{"sale_id":235,"sale_date":"2026-09-24","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":17,"net_revenue":25500},{"sale_id":236,"sale_date":"2026-09-24","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":10,"net_revenue":11000},{"sale_id":237,"sale_date":"2026-09-24","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":6,"net_revenue":5400},{"sale_id":238,"sale_date":"2026-09-24","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":17,"net_revenue":5100},{"sale_id":239,"sale_date":"2026-09-24","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":10,"net_revenue":7000},{"sale_id":240,"sale_date":"2026-09-24","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":21,"net_revenue":16800},{"sale_id":241,"sale_date":"2026-09-25","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":24,"net_revenue":12000},{"sale_id":242,"sale_date":"2026-09-25","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":17,"net_revenue":20400},{"sale_id":243,"sale_date":"2026-09-25","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":27,"net_revenue":17550},{"sale_id":244,"sale_date":"2026-09-25","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":12,"net_revenue":21600},{"sale_id":245,"sale_date":"2026-09-25","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":6,"net_revenue":9000},{"sale_id":246,"sale_date":"2026-09-25","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":17,"net_revenue":18700},{"sale_id":247,"sale_date":"2026-09-25","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":13,"net_revenue":11700},{"sale_id":248,"sale_date":"2026-09-25","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":6,"net_revenue":1800},{"sale_id":249,"sale_date":"2026-09-25","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":17,"net_revenue":11900},{"sale_id":250,"sale_date":"2026-09-25","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":10,"net_revenue":8000},{"sale_id":251,"sale_date":"2026-09-26","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":13,"net_revenue":6500},{"sale_id":252,"sale_date":"2026-09-26","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":23,"net_revenue":27600},{"sale_id":253,"sale_date":"2026-09-26","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":17,"net_revenue":11050},{"sale_id":254,"sale_date":"2026-09-26","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":19,"net_revenue":34200},{"sale_id":255,"sale_date":"2026-09-26","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":13,"net_revenue":19500},{"sale_id":256,"sale_date":"2026-09-26","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":6,"net_revenue":6600},{"sale_id":257,"sale_date":"2026-09-26","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":20,"net_revenue":18000},{"sale_id":258,"sale_date":"2026-09-26","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":13,"net_revenue":3900},{"sale_id":259,"sale_date":"2026-09-26","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":6,"net_revenue":4200},{"sale_id":260,"sale_date":"2026-09-26","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":17,"net_revenue":13600},{"sale_id":261,"sale_date":"2026-09-27","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":19,"net_revenue":9500},{"sale_id":262,"sale_date":"2026-09-27","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":13,"net_revenue":15600},{"sale_id":263,"sale_date":"2026-09-27","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":24,"net_revenue":15600},{"sale_id":264,"sale_date":"2026-09-27","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":8,"net_revenue":14400},{"sale_id":265,"sale_date":"2026-09-27","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":20,"net_revenue":30000},{"sale_id":266,"sale_date":"2026-09-27","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":13,"net_revenue":14300},{"sale_id":267,"sale_date":"2026-09-27","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":9,"net_revenue":8100},{"sale_id":268,"sale_date":"2026-09-27","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":20,"net_revenue":6000},{"sale_id":269,"sale_date":"2026-09-27","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":13,"net_revenue":9100},{"sale_id":270,"sale_date":"2026-09-27","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":5,"net_revenue":4000},{"sale_id":271,"sale_date":"2026-09-28","product_name":"無線滑鼠","category":"電腦周邊","channel":"實體門市","net_quantity":27,"net_revenue":13500},{"sale_id":272,"sale_date":"2026-09-28","product_name":"機械鍵盤","category":"電腦周邊","channel":"校園團購","net_quantity":20,"net_revenue":24000},{"sale_id":273,"sale_date":"2026-09-28","product_name":"USB集線器","category":"電腦周邊","channel":"網路商店","net_quantity":13,"net_revenue":8450},{"sale_id":274,"sale_date":"2026-09-28","product_name":"藍牙耳機","category":"影音設備","channel":"實體門市","net_quantity":15,"net_revenue":27000},{"sale_id":275,"sale_date":"2026-09-28","product_name":"藍牙喇叭","category":"影音設備","channel":"校園團購","net_quantity":9,"net_revenue":13500},{"sale_id":276,"sale_date":"2026-09-28","product_name":"網路攝影機","category":"影音設備","channel":"網路商店","net_quantity":20,"net_revenue":22000},{"sale_id":277,"sale_date":"2026-09-28","product_name":"行動電源","category":"行動配件","channel":"實體門市","net_quantity":16,"net_revenue":14400},{"sale_id":278,"sale_date":"2026-09-28","product_name":"手機支架","category":"行動配件","channel":"校園團購","net_quantity":9,"net_revenue":2700},{"sale_id":279,"sale_date":"2026-09-28","product_name":"充電器","category":"行動配件","channel":"網路商店","net_quantity":19,"net_revenue":13300},{"sale_id":280,"sale_date":"2026-09-28","product_name":"筆電支架","category":"電腦周邊","channel":"實體門市","net_quantity":13,"net_revenue":10400},{"sale_id":281,"sale_date":"2026-09-29","product_name":"無線滑鼠","category":"電腦周邊","channel":"校園團購","net_quantity":16,"net_revenue":8000},{"sale_id":282,"sale_date":"2026-09-29","product_name":"機械鍵盤","category":"電腦周邊","channel":"網路商店","net_quantity":27,"net_revenue":32400},{"sale_id":283,"sale_date":"2026-09-29","product_name":"USB集線器","category":"電腦周邊","channel":"實體門市","net_quantity":20,"net_revenue":13000},{"sale_id":284,"sale_date":"2026-09-29","product_name":"藍牙耳機","category":"影音設備","channel":"校園團購","net_quantity":4,"net_revenue":7200},{"sale_id":285,"sale_date":"2026-09-29","product_name":"藍牙喇叭","category":"影音設備","channel":"網路商店","net_quantity":16,"net_revenue":24000},{"sale_id":286,"sale_date":"2026-09-29","product_name":"網路攝影機","category":"影音設備","channel":"實體門市","net_quantity":9,"net_revenue":9900},{"sale_id":287,"sale_date":"2026-09-29","product_name":"行動電源","category":"行動配件","channel":"校園團購","net_quantity":23,"net_revenue":20700},{"sale_id":288,"sale_date":"2026-09-29","product_name":"手機支架","category":"行動配件","channel":"網路商店","net_quantity":15,"net_revenue":4500},{"sale_id":289,"sale_date":"2026-09-29","product_name":"充電器","category":"行動配件","channel":"實體門市","net_quantity":9,"net_revenue":6300},{"sale_id":290,"sale_date":"2026-09-29","product_name":"筆電支架","category":"電腦周邊","channel":"校園團購","net_quantity":20,"net_revenue":16000},{"sale_id":291,"sale_date":"2026-09-30","product_name":"無線滑鼠","category":"電腦周邊","channel":"網路商店","net_quantity":23,"net_revenue":11500},{"sale_id":292,"sale_date":"2026-09-30","product_name":"機械鍵盤","category":"電腦周邊","channel":"實體門市","net_quantity":16,"net_revenue":19200},{"sale_id":293,"sale_date":"2026-09-30","product_name":"USB集線器","category":"電腦周邊","channel":"校園團購","net_quantity":27,"net_revenue":17550},{"sale_id":294,"sale_date":"2026-09-30","product_name":"藍牙耳機","category":"影音設備","channel":"網路商店","net_quantity":11,"net_revenue":19800},{"sale_id":295,"sale_date":"2026-09-30","product_name":"藍牙喇叭","category":"影音設備","channel":"實體門市","net_quantity":5,"net_revenue":7500},{"sale_id":296,"sale_date":"2026-09-30","product_name":"網路攝影機","category":"影音設備","channel":"校園團購","net_quantity":16,"net_revenue":17600},{"sale_id":297,"sale_date":"2026-09-30","product_name":"行動電源","category":"行動配件","channel":"網路商店","net_quantity":11,"net_revenue":9900},{"sale_id":298,"sale_date":"2026-09-30","product_name":"手機支架","category":"行動配件","channel":"實體門市","net_quantity":23,"net_revenue":6900},{"sale_id":299,"sale_date":"2026-09-30","product_name":"充電器","category":"行動配件","channel":"校園團購","net_quantity":16,"net_revenue":11200},{"sale_id":300,"sale_date":"2026-09-30","product_name":"筆電支架","category":"電腦周邊","channel":"網路商店","net_quantity":9,"net_revenue":7200}],"verification":{"label":"updated","ok":true,"checks":[{"name":"資料筆數","expected":300,"actual":300,"ok":true},{"name":"售出數量（含退貨）","expected":4524,"actual":4524,"ok":true},{"name":"退貨數量","expected":63,"actual":63,"ok":true},{"name":"淨銷售額（NT$）","expected":3970100,"actual":3970100,"ok":true},{"name":"異動筆數","expected":240,"actual":240,"ok":true},{"name":"不變筆數","expected":60,"actual":60,"ok":true}]}};
+var POLL_MS = 30000;
+var LABELS = { original: '原始資料', updated: '更新後資料' };
+var PALETTE = ['#2F6DB5', '#1B9A86', '#E0982F', '#8A5FB0', '#C45B5B'];
+var charts = {};
+var catColor = {};
+var lastCheck = null;
+var pollState = 'idle';
+
+var nf = new Intl.NumberFormat('zh-TW');
+function $(id) { return document.getElementById(id); }
+function money(v) { return 'NT$' + nf.format(Math.round(v)); }
+function signed(v) { return (v > 0 ? '+' : v < 0 ? '−' : '±') + nf.format(Math.abs(Math.round(v))); }
+function wan(v) { return Math.abs(v) >= 10000 ? (v / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + ' 萬' : nf.format(v); }
+function pct(v, d) { return (v * 100).toFixed(d == null ? 1 : d) + '%'; }
+function day(s) { return Number(s.slice(5, 7)) + '/' + Number(s.slice(8, 10)); }
+function stamp(s) { return s.replace('T', ' ').slice(0, 16); }
+function label(l) { return LABELS[l] || l; }
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function sum(a, f) { return a.reduce(function (t, x) { return t + f(x); }, 0); }
+
+/* ---------- 文字與數字 ---------- */
+function renderStatus() {
+  var s = DATA.meta.snapshot;
+  $('stSnapshot').textContent = '目前資料：' + label(s.label);
+  $('stLoaded').textContent = '匯入資料庫：' + stamp(s.loaded_at);
+  $('stBuilt').textContent = '網頁產生：' + stamp(DATA.meta.generated_at);
+  var dot = $('stDot'), t = $('stPoll');
+  dot.className = 'dot';
+  if (location.protocol === 'file:') { t.textContent = '本機檔案，未啟用自動更新'; return; }
+  if (pollState === 'error') { dot.classList.add('err'); t.textContent = '暫時無法檢查更新，顯示目前版本'; return; }
+  if (lastCheck) { dot.classList.add('live'); t.textContent = '每 30 秒檢查新資料，上次 ' + lastCheck.toLocaleTimeString('zh-TW', { hour12: false }); return; }
+  t.textContent = '每 30 秒檢查新資料';
+}
+
+function setDelta(id, cur, prev, fmt, positiveIsGood) {
+  var e = $(id), p = DATA.meta.previous;
+  e.className = 'delta';
+  if (!p) { e.textContent = ''; return; }
+  var diff = cur - prev;
+  e.textContent = diff === 0 ? '與' + label(p.label) + '相同' : '較' + label(p.label) + ' ' + fmt(diff);
+  if (positiveIsGood && diff > 0) e.classList.add('up');
+}
+
+function renderKpis() {
+  var s = DATA.meta.snapshot, p = DATA.meta.previous;
+  $('kNet').textContent = money(s.net_revenue);
+  $('kRec').textContent = nf.format(s.records);
+  $('kQty').textContent = nf.format(s.quantity);
+  $('kRet').textContent = nf.format(s.returns);
+  var rate = s.quantity ? s.returns / s.quantity : 0;
+  $('kRate').textContent = pct(rate, 2);
+  if (p) {
+    var prate = p.quantity ? p.returns / p.quantity : 0;
+    setDelta('kNetD', s.net_revenue, p.net_revenue, signed, true);
+    setDelta('kRecD', s.records, p.records, signed);
+    setDelta('kQtyD', s.quantity, p.quantity, signed);
+    setDelta('kRetD', s.returns, p.returns, signed);
+    var dRate = (rate - prate) * 100;
+    var e = $('kRateD'); e.className = 'delta';
+    e.textContent = Math.abs(dRate) < 0.005 ? '與' + label(p.label) + '相同'
+      : '較' + label(p.label) + ' ' + (dRate > 0 ? '+' : '−') + Math.abs(dRate).toFixed(2) + ' 個百分點';
+  } else {
+    ['kNetD', 'kRecD', 'kQtyD', 'kRetD', 'kRateD'].forEach(function (id) { $(id).textContent = ''; });
+  }
+}
+
+function renderVerify() {
+  var v = DATA.verification, box = $('verify');
+  if (!v) { box.hidden = true; return; }
+  box.hidden = false;
+  $('verifySummary').textContent = '驗收數值（' + label(v.label) + '）：' + (v.ok ? '全部符合' : '有項目不符');
+  var body = $('verifyBody'); body.textContent = '';
+  v.checks.forEach(function (c) {
+    var tr = el('tr');
+    tr.appendChild(el('td', null, c.name));
+    tr.appendChild(el('td', 'num', nf.format(c.expected)));
+    tr.appendChild(el('td', 'num', nf.format(c.actual)));
+    tr.appendChild(el('td', c.ok ? 'ok' : 'bad', c.ok ? '符合' : '不符'));
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- 圖表 ---------- */
+function setCategoryColors() {
+  catColor = {};
+  DATA.categories.map(function (c) { return c.category; })
+    .sort(function (a, b) { return a.localeCompare(b, 'zh-Hant-TW'); })
+    .forEach(function (c, i) { catColor[c] = PALETTE[i % PALETTE.length]; });
+}
+
+function make(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id).getContext('2d'), cfg);
+}
+
+function applyDefaults() {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  Chart.defaults.font.family = css('--sans');
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = css('--muted');
+  Chart.defaults.borderColor = css('--line');
+  Chart.defaults.animation = reduce ? false : { duration: 450 };
+}
+
+function tip() {
+  return { backgroundColor: css('--ink'), titleColor: css('--sheet'), bodyColor: css('--sheet'), padding: 10, cornerRadius: 4, boxPadding: 4 };
+}
+
+function renderDaily() {
+  var s = DATA.meta.snapshot, p = DATA.meta.previous, rows = DATA.daily;
+  var accent = css('--accent');
+  var sets = [{
+    label: label(s.label), data: rows.map(function (r) { return r.net_revenue; }),
+    borderColor: accent, backgroundColor: css('--accent-soft'), fill: true, tension: .25,
+    borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: accent
+  }];
+  if (p && p.daily && p.daily.length) {
+    var pm = {}; p.daily.forEach(function (r) { pm[r.sale_date] = r.net_revenue; });
+    sets.unshift({
+      label: label(p.label), data: rows.map(function (r) { return pm[r.sale_date] == null ? null : pm[r.sale_date]; }),
+      borderColor: css('--muted'), borderDash: [6, 5], borderWidth: 2, pointRadius: 0, pointHoverRadius: 4,
+      fill: false, tension: .25
+    });
+  }
+  var maxR = rows.reduce(function (a, b) { return b.net_revenue > a.net_revenue ? b : a; });
+  var minR = rows.reduce(function (a, b) { return b.net_revenue < a.net_revenue ? b : a; });
+  var avg = sum(rows, function (r) { return r.net_revenue; }) / rows.length;
+  var txt = '日均 ' + money(avg) + '；最高是 ' + day(maxR.sale_date) + '（' + money(maxR.net_revenue) + '），最低是 ' + day(minR.sale_date) + '（' + money(minR.net_revenue) + '）。';
+  if (p) txt += ' 虛線為' + label(p.label) + '。';
+  $('insDaily').textContent = txt;
+  $('cDaily').setAttribute('aria-label', '每日淨銷售額折線圖。' + txt);
+
+  make('cDaily', {
+    type: 'line',
+    data: { labels: rows.map(function (r) { return day(r.sale_date); }), datasets: sets },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: sets.length > 1, align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
+        tooltip: Object.assign(tip(), { callbacks: { label: function (c) { return c.dataset.label + '：' + money(c.parsed.y); } } })
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 15, maxRotation: 0 } },
+        y: { beginAtZero: true, ticks: { callback: function (v) { return wan(v); } } }
+      }
+    }
+  });
+}
+
+function renderLegend() {
+  var ul = $('catLegend'); ul.textContent = '';
+  Object.keys(catColor).forEach(function (c) {
+    var li = el('li'); var sw = el('span', 'sw'); sw.style.background = catColor[c];
+    li.appendChild(sw); li.appendChild(el('span', null, c)); ul.appendChild(li);
+  });
+}
+
+function renderProduct() {
+  var rows = DATA.products.slice().sort(function (a, b) { return b.net_revenue - a.net_revenue; });
+  var total = sum(rows, function (r) { return r.net_revenue; });
+  var top = rows[0], low = rows[rows.length - 1];
+  var txt = top.product_name + ' 最高（' + money(top.net_revenue) + '，占 ' + pct(top.net_revenue / total) + '），' + low.product_name + ' 最低（' + money(low.net_revenue) + '）。';
+  $('insProduct').textContent = txt;
+  $('cProduct').setAttribute('aria-label', '各商品淨銷售額長條圖。' + txt);
+  make('cProduct', {
+    type: 'bar',
+    data: { labels: rows.map(function (r) { return r.product_name; }),
+      datasets: [{ data: rows.map(function (r) { return r.net_revenue; }),
+        backgroundColor: rows.map(function (r) { return catColor[r.category]; }), borderRadius: 3, maxBarThickness: 24 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: Object.assign(tip(), { callbacks: {
+          label: function (c) { return money(c.parsed.x); },
+          afterLabel: function (c) { var r = rows[c.dataIndex]; return r.category + '，淨售出 ' + nf.format(r.net_quantity) + ' 件'; } } }) },
+      scales: { x: { beginAtZero: true, ticks: { callback: function (v) { return wan(v); } } }, y: { grid: { display: false } } }
+    }
+  });
+}
+
+function renderCategory() {
+  var rows = DATA.categories.slice().sort(function (a, b) { return b.net_revenue - a.net_revenue; });
+  var total = sum(rows, function (r) { return r.net_revenue; });
+  var txt = rows[0].category + '占最多，達 ' + pct(rows[0].net_revenue / total) + '。';
+  $('insCategory').textContent = txt;
+  $('cCategory').setAttribute('aria-label', '各分類淨銷售額占比圓餅圖。' + txt);
+  make('cCategory', {
+    type: 'pie',
+    data: { labels: rows.map(function (r) { return r.category; }),
+      datasets: [{ data: rows.map(function (r) { return r.net_revenue; }),
+        backgroundColor: rows.map(function (r) { return catColor[r.category]; }), borderColor: css('--sheet'), borderWidth: 2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: Object.assign(tip(), { callbacks: { label: function (c) { return c.label + '：' + money(c.parsed) + '（' + pct(c.parsed / total) + '）'; } } }) }
+    }
+  });
+  var ul = $('catShare'); ul.textContent = '';
+  rows.forEach(function (r) {
+    var li = el('li'); var sw = el('span', 'sw'); sw.style.background = catColor[r.category];
+    li.appendChild(sw); li.appendChild(el('span', null, r.category));
+    li.appendChild(el('span', 'pct', pct(r.net_revenue / total)));
+    li.appendChild(el('span', 'amt', money(r.net_revenue)));
+    ul.appendChild(li);
+  });
+}
+
+function renderChannel() {
+  var chans = DATA.channels.slice().sort(function (a, b) { return b.net_revenue - a.net_revenue; });
+  var total = sum(chans, function (r) { return r.net_revenue; });
+  var cats = Object.keys(catColor);
+  var lookup = {};
+  DATA.channel_category.forEach(function (r) { lookup[r.channel + '|' + r.category] = r.net_revenue; });
+  var txt = chans.map(function (c) { return c.channel + ' ' + pct(c.net_revenue / total); }).join('、') + '。';
+  $('insChannel').textContent = '各通路占比：' + txt + ' 顏色為商品分類。';
+  $('cChannel').setAttribute('aria-label', '各通路淨銷售額堆疊長條圖。各通路占比：' + txt);
+  make('cChannel', {
+    type: 'bar',
+    data: { labels: chans.map(function (c) { return c.channel; }),
+      datasets: cats.map(function (cat) {
+        return { label: cat, backgroundColor: catColor[cat], borderRadius: 2, maxBarThickness: 64,
+          data: chans.map(function (c) { return lookup[c.channel + '|' + cat] || 0; }) };
+      }) },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+        tooltip: Object.assign(tip(), { callbacks: {
+          label: function (c) { return c.dataset.label + '：' + money(c.parsed.y); },
+          footer: function (items) { return '合計：' + money(sum(items, function (i) { return i.parsed.y; })); } } }) },
+      scales: { x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, ticks: { callback: function (v) { return wan(v); } } } }
+    }
+  });
+}
+
+function renderScatter() {
+  var cats = Object.keys(catColor);
+  var recs = DATA.records;
+  $('insScatter').textContent = '每個點是一筆銷售紀錄（共 ' + nf.format(recs.length) + ' 筆）。單價越高的商品，同樣數量下的位置越高。';
+  $('cScatter').setAttribute('aria-label', '淨售出數量與淨銷售額散佈圖，共 ' + recs.length + ' 筆紀錄。');
+  make('cScatter', {
+    type: 'scatter',
+    data: { datasets: cats.map(function (cat) {
+      return { label: cat, backgroundColor: catColor[cat] + 'B3', borderColor: catColor[cat], pointRadius: 4, pointHoverRadius: 6,
+        data: recs.filter(function (r) { return r.category === cat; }).map(function (r) {
+          return { x: r.net_quantity, y: r.net_revenue, name: r.product_name, date: r.sale_date, channel: r.channel };
+        }) };
+    }) },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+        tooltip: Object.assign(tip(), { callbacks: {
+          title: function (items) { var d = items[0].raw; return d.name + '　' + day(d.date) + '　' + d.channel; },
+          label: function (c) { return '淨售出 ' + nf.format(c.raw.x) + ' 件，' + money(c.raw.y); } } }) },
+      scales: {
+        x: { beginAtZero: true, title: { display: true, text: '淨售出數量（售出 − 退貨）' } },
+        y: { beginAtZero: true, title: { display: true, text: '淨銷售額' }, ticks: { callback: function (v) { return wan(v); } } }
+      }
+    }
+  });
+}
+
+function renderCharts() {
+  if (typeof Chart === 'undefined') { $('insDaily').textContent = '圖表元件載入失敗，請確認 vendor/chart.umd.js 是否存在。'; return; }
+  applyDefaults();
+  setCategoryColors();
+  renderLegend();
+  renderDaily(); renderProduct(); renderCategory(); renderChannel(); renderScatter();
+}
+
+function renderAll() { renderStatus(); renderKpis(); renderCharts(); renderVerify(); }
+
+/* ---------- 自動檢查新資料 ---------- */
+var toastTimer;
+function toast(msg) {
+  var t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 4000);
+}
+
+function poll() {
+  if (location.protocol === 'file:') return;
+  fetch('data.json?_=' + Date.now(), { cache: 'no-store' })
+    .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+    .then(function (next) {
+      pollState = 'ok'; lastCheck = new Date();
+      if (next && next.meta && next.meta.generated_at !== DATA.meta.generated_at) {
+        DATA = next; renderAll(); toast('已載入新版資料');
+      } else { renderStatus(); }
+    })
+    .catch(function () { pollState = 'error'; renderStatus(); });
+}
+
+if (DATA) {
+  renderAll();
+  setInterval(poll, POLL_MS);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) poll(); });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { renderCharts(); });
+} else {
+  $('stSnapshot').textContent = '尚未產生資料，請先執行 pipeline.py build';
+}
+})();
+</script>
+</body>
+</html>
