@@ -83,7 +83,8 @@ def connect() -> pymysql.connections.Connection:
     s = db_settings()
     try:
         boot = pymysql.connect(host=s["host"], port=s["port"], user=s["user"],
-                               password=s["password"], charset="utf8mb4")
+                               password=s["password"], charset="utf8mb4",
+                               ssl={"ssl": {}})
     except pymysql.err.OperationalError as e:
         raise PipelineError(f"無法連線 MySQL（{s['host']}:{s['port']}）：{e}") from e
     with boot.cursor() as cur:
@@ -95,6 +96,7 @@ def connect() -> pymysql.connections.Connection:
     return pymysql.connect(
         host=s["host"], port=s["port"], user=s["user"], password=s["password"],
         database=s["database"], charset="utf8mb4", cursorclass=DictCursor, autocommit=False,
+        ssl={"ssl": {}},
     )
 
 
